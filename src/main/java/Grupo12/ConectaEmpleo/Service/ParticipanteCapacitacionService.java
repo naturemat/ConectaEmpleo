@@ -52,12 +52,6 @@ public class ParticipanteCapacitacionService {
      * @return Lista de inscripciones
      */
     public List<ParticipanteCapacitacion> findByTrabajador(Usuario usuario) {
-        List<ParticipanteCapacitacion> inscripciones = repository.findByUsuario(usuario);
-
-        if (inscripciones.isEmpty()) {
-            throw new RuntimeException("No hay inscripciones para el usuario: " + usuario.getNombre());
-        }
-
-        return inscripciones;
+        return repository.findByUsuario(usuario);
     }
 }
