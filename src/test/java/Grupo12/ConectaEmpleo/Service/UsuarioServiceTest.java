@@ -1,96 +1,89 @@
 package Grupo12.ConectaEmpleo.Service;
 
 import Grupo12.ConectaEmpleo.Model.Usuario;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
+import Grupo12.ConectaEmpleo.Repository.UsuarioRepository;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- *
- * @author Home
- */
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
-    
-    public UsuarioServiceTest() {
-    }
-    
-    @BeforeAll
-    public static void setUpClass() {
-    }
-    
-    @AfterAll
-    public static void tearDownClass() {
-    }
-    
-    @BeforeEach
-    public void setUp() {
-    }
-    
-    @AfterEach
-    public void tearDown() {
-    }
 
-    /**
-     * Test of correoExiste method, of class UsuarioService.
-     */
+    @Mock
+    private UsuarioRepository usuarioRepo;
+
+    @InjectMocks
+    private UsuarioService usuarioService;
+
     @Test
     public void testCorreoExiste() {
-        System.out.println("correoExiste");
-        String correo = "";
-        UsuarioService instance = new UsuarioService();
-        boolean expResult = false;
-        boolean result = instance.correoExiste(correo);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        when(usuarioRepo.existsByCorreo("a@b.com")).thenReturn(true);
+
+        assertTrue(usuarioService.correoExiste("a@b.com"));
+        assertFalse(usuarioService.correoExiste("otro@b.com"));
+
+        verify(usuarioRepo).existsByCorreo("a@b.com");
     }
 
-    /**
-     * Test of registrar method, of class UsuarioService.
-     */
     @Test
     public void testRegistrar() {
-        System.out.println("registrar");
-        Usuario usuario = null;
-        UsuarioService instance = new UsuarioService();
-        Usuario expResult = null;
-        Usuario result = instance.registrar(usuario);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Usuario usuario = new Usuario();
+        when(usuarioRepo.save(usuario)).thenReturn(usuario);
+
+        Usuario resultado = usuarioService.registrar(usuario);
+
+        assertSame(usuario, resultado);
+        verify(usuarioRepo).save(usuario);
     }
 
-    /**
-     * Test of autenticar method, of class UsuarioService.
-     */
     @Test
-    public void testAutenticar() {
-        System.out.println("autenticar");
-        String correo = "";
-        String contrasena = "";
-        UsuarioService instance = new UsuarioService();
-        Usuario expResult = null;
-        Usuario result = instance.autenticar(correo, contrasena);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testAutenticarConCredencialesValidas() {
+        Usuario usuario = new Usuario();
+        usuario.setCorreo("a@b.com");
+        usuario.setContrasena("secreto");
+        when(usuarioRepo.findByCorreo("a@b.com")).thenReturn(usuario);
+
+        Usuario resultado = usuarioService.autenticar("a@b.com", "secreto");
+
+        assertSame(usuario, resultado);
     }
 
-    /**
-     * Test of actualizarCalificacionPromedio method, of class UsuarioService.
-     */
     @Test
-    public void testActualizarCalificacionPromedio() {
-        System.out.println("actualizarCalificacionPromedio");
-        Usuario usuario = null;
-        Integer nuevaPuntuacion = null;
-        UsuarioService instance = new UsuarioService();
-        instance.actualizarCalificacionPromedio(usuario, nuevaPuntuacion);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testAutenticarConContrasenaIncorrecta() {
+        Usuario usuario = new Usuario();
+        usuario.setCorreo("a@b.com");
+        usuario.setContrasena("secreto");
+        when(usuarioRepo.findByCorreo("a@b.com")).thenReturn(usuario);
+
+        assertNull(usuarioService.autenticar("a@b.com", "mal"));
     }
-    
+
+    @Test
+    public void testAutenticarConCorreoInexistente() {
+        when(usuarioRepo.findByCorreo("nadie@b.com")).thenReturn(null);
+
+        assertNull(usuarioService.autenticar("nadie@b.com", "x"));
+    }
+
+    @Test
+    public void testActualizarCalificacionPromedioGuardaElUsuario() {
+        Usuario usuario = new Usuario();
+        usuario.setCalificacionPromedio(new BigDecimal("4.00"));
+
+        usuarioService.actualizarCalificacionPromedio(usuario, 5);
+
+        assertNotNull(usuario.getCalificacionPromedio());
+        verify(usuarioRepo).save(usuario);
+    }
 }

@@ -1,79 +1,57 @@
 package Grupo12.ConectaEmpleo.Service;
 
 import Grupo12.ConectaEmpleo.Model.Capacitacion;
+import Grupo12.ConectaEmpleo.Repository.CapacitacionRepository;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- *
- * @author Home
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class CapacitacionServiceTest {
-    
-    public CapacitacionServiceTest() {
-    }
-    
-    @BeforeAll
-    public static void setUpClass() {
-    }
-    
-    @AfterAll
-    public static void tearDownClass() {
-    }
-    
-    @BeforeEach
-    public void setUp() {
-    }
-    
-    @AfterEach
-    public void tearDown() {
-    }
 
-    /**
-     * Test of obtenerTodas method, of class CapacitacionService.
-     */
+    @Mock
+    private CapacitacionRepository capacitacionRepo;
+
+    @InjectMocks
+    private CapacitacionService capacitacionService;
+
     @Test
     public void testObtenerTodas() {
-        System.out.println("obtenerTodas");
-        CapacitacionService instance = new CapacitacionService();
-        List<Capacitacion> expResult = null;
-        List<Capacitacion> result = instance.obtenerTodas();
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        when(capacitacionRepo.findAll()).thenReturn(List.of(new Capacitacion(), new Capacitacion()));
+
+        assertEquals(2, capacitacionService.obtenerTodas().size());
+        verify(capacitacionRepo).findAll();
     }
 
-    /**
-     * Test of guardar method, of class CapacitacionService.
-     */
     @Test
     public void testGuardar() {
-        System.out.println("guardar");
-        Capacitacion capacitacion = null;
-        CapacitacionService instance = new CapacitacionService();
-        instance.guardar(capacitacion);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Capacitacion capacitacion = new Capacitacion();
+        capacitacionService.guardar(capacitacion);
+        verify(capacitacionRepo).save(capacitacion);
     }
 
-    /**
-     * Test of obtenerPorId method, of class CapacitacionService.
-     */
     @Test
-    public void testObtenerPorId() {
-        System.out.println("obtenerPorId");
-        Long id = null;
-        CapacitacionService instance = new CapacitacionService();
-        Capacitacion expResult = null;
-        Capacitacion result = instance.obtenerPorId(id);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testObtenerPorIdCuandoExiste() {
+        Capacitacion capacitacion = new Capacitacion();
+        when(capacitacionRepo.findById(3L)).thenReturn(Optional.of(capacitacion));
+
+        assertSame(capacitacion, capacitacionService.obtenerPorId(3L));
     }
-    
+
+    @Test
+    public void testObtenerPorIdCuandoNoExiste() {
+        when(capacitacionRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> capacitacionService.obtenerPorId(99L));
+    }
 }

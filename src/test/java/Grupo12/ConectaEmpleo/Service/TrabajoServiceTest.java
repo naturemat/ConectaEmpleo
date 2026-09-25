@@ -1,123 +1,106 @@
 package Grupo12.ConectaEmpleo.Service;
 
 import Grupo12.ConectaEmpleo.Model.Trabajo;
+import Grupo12.ConectaEmpleo.Repository.TrabajoRepository;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- *
- * @author Home
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class TrabajoServiceTest {
-    
-    public TrabajoServiceTest() {
-    }
-    
-    @BeforeAll
-    public static void setUpClass() {
-    }
-    
-    @AfterAll
-    public static void tearDownClass() {
-    }
-    
-    @BeforeEach
-    public void setUp() {
-    }
-    
-    @AfterEach
-    public void tearDown() {
-    }
 
-    /**
-     * Test of guardarTrabajo method, of class TrabajoService.
-     */
+    @Mock
+    private TrabajoRepository trabajoRepo;
+
+    @InjectMocks
+    private TrabajoService trabajoService;
+
     @Test
     public void testGuardarTrabajo() {
-        System.out.println("guardarTrabajo");
-        Trabajo trabajo = null;
-        TrabajoService instance = new TrabajoService();
-        instance.guardarTrabajo(trabajo);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Trabajo trabajo = new Trabajo();
+        trabajoService.guardarTrabajo(trabajo);
+        verify(trabajoRepo).save(trabajo);
     }
 
-    /**
-     * Test of listarTodos method, of class TrabajoService.
-     */
     @Test
     public void testListarTodos() {
-        System.out.println("listarTodos");
-        TrabajoService instance = new TrabajoService();
-        List<Trabajo> expResult = null;
-        List<Trabajo> result = instance.listarTodos();
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        when(trabajoRepo.findAll()).thenReturn(List.of(new Trabajo(), new Trabajo()));
+
+        assertEquals(2, trabajoService.listarTodos().size());
+        verify(trabajoRepo).findAll();
     }
 
-    /**
-     * Test of obtenerPorId method, of class TrabajoService.
-     */
     @Test
-    public void testObtenerPorId() {
-        System.out.println("obtenerPorId");
-        Long id = null;
-        TrabajoService instance = new TrabajoService();
-        Trabajo expResult = null;
-        Trabajo result = instance.obtenerPorId(id);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testObtenerPorIdCuandoExiste() {
+        Trabajo trabajo = new Trabajo();
+        when(trabajoRepo.findById(1L)).thenReturn(Optional.of(trabajo));
+
+        assertSame(trabajo, trabajoService.obtenerPorId(1L));
     }
 
-    /**
-     * Test of buscarPorCategoriaOUbicacion method, of class TrabajoService.
-     */
     @Test
-    public void testBuscarPorCategoriaOUbicacion() {
-        System.out.println("buscarPorCategoriaOUbicacion");
-        String categoria = "";
-        String ubicacion = "";
-        TrabajoService instance = new TrabajoService();
-        List<Trabajo> expResult = null;
-        List<Trabajo> result = instance.buscarPorCategoriaOUbicacion(categoria, ubicacion);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testObtenerPorIdCuandoNoExiste() {
+        when(trabajoRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> trabajoService.obtenerPorId(99L));
     }
 
-    /**
-     * Test of obtenerCategoriasConMasOfertas method, of class TrabajoService.
-     */
+    @Test
+    public void testBuscarPorCategoria() {
+        when(trabajoRepo.findByCategoriaContainingIgnoreCase("tech")).thenReturn(List.of(new Trabajo()));
+
+        assertEquals(1, trabajoService.buscarPorCategoriaOUbicacion("tech", null).size());
+        verify(trabajoRepo).findByCategoriaContainingIgnoreCase("tech");
+    }
+
+    @Test
+    public void testBuscarPorUbicacion() {
+        when(trabajoRepo.findByUbicacionContainingIgnoreCase("medellin")).thenReturn(List.of());
+
+        assertTrue(trabajoService.buscarPorCategoriaOUbicacion("", "medellin").isEmpty());
+        verify(trabajoRepo).findByUbicacionContainingIgnoreCase("medellin");
+    }
+
+    @Test
+    public void testBuscarSinFiltrosDevuelveTodo() {
+        when(trabajoRepo.findAll()).thenReturn(List.of(new Trabajo()));
+
+        assertEquals(1, trabajoService.buscarPorCategoriaOUbicacion(null, null).size());
+        verify(trabajoRepo).findAll();
+    }
+
     @Test
     public void testObtenerCategoriasConMasOfertas() {
-        System.out.println("obtenerCategoriasConMasOfertas");
-        TrabajoService instance = new TrabajoService();
-        Map<String, Long> expResult = null;
-        Map<String, Long> result = instance.obtenerCategoriasConMasOfertas();
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Trabajo tecnologia = new Trabajo();
+        tecnologia.setCategoria("Tecnologia");
+        Trabajo tecnologia2 = new Trabajo();
+        tecnologia2.setCategoria("Tecnologia");
+        Trabajo sinCategoria = new Trabajo();
+        sinCategoria.setCategoria("  ");
+        when(trabajoRepo.findAll()).thenReturn(List.of(tecnologia, tecnologia2, sinCategoria));
+
+        Map<String, Long> resultado = trabajoService.obtenerCategoriasConMasOfertas();
+
+        assertEquals(2L, resultado.get("Tecnologia"));
+        verify(trabajoRepo).findAll();
     }
 
-    /**
-     * Test of eliminar method, of class TrabajoService.
-     */
     @Test
     public void testEliminar() {
-        System.out.println("eliminar");
-        Trabajo trabajo = null;
-        TrabajoService instance = new TrabajoService();
-        instance.eliminar(trabajo);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Trabajo trabajo = new Trabajo();
+        trabajoService.eliminar(trabajo);
+        verify(trabajoRepo).delete(trabajo);
     }
-    
 }

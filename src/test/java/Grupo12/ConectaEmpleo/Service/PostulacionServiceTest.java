@@ -1,83 +1,105 @@
 package Grupo12.ConectaEmpleo.Service;
 
+import Grupo12.ConectaEmpleo.Model.EstadoPostulacion;
+import Grupo12.ConectaEmpleo.Model.EstadoTrabajo;
 import Grupo12.ConectaEmpleo.Model.Postulacion;
 import Grupo12.ConectaEmpleo.Model.Trabajo;
 import Grupo12.ConectaEmpleo.Model.Usuario;
+import Grupo12.ConectaEmpleo.Repository.PostulacionRepository;
+import Grupo12.ConectaEmpleo.Repository.TrabajoRepository;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- *
- * @author Home
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class PostulacionServiceTest {
-    
-    public PostulacionServiceTest() {
-    }
-    
-    @BeforeAll
-    public static void setUpClass() {
-    }
-    
-    @AfterAll
-    public static void tearDownClass() {
-    }
-    
-    @BeforeEach
-    public void setUp() {
-    }
-    
-    @AfterEach
-    public void tearDown() {
-    }
 
-    /**
-     * Test of postularse method, of class PostulacionService.
-     */
+    @Mock
+    private PostulacionRepository postulacionRepo;
+
+    @Mock
+    private TrabajoRepository trabajoRepo;
+
+    @InjectMocks
+    private PostulacionService postulacionService;
+
     @Test
-    public void testPostularse() {
-        System.out.println("postularse");
-        Usuario trabajador = null;
-        Trabajo trabajo = null;
-        PostulacionService instance = new PostulacionService();
-        instance.postularse(trabajador, trabajo);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+    public void testPostularseCreaUnaPostulacion() {
+        Usuario trabajador = new Usuario();
+        Trabajo trabajo = new Trabajo();
+        when(postulacionRepo.existsByTrabajadorAndTrabajo(trabajador, trabajo)).thenReturn(false);
+
+        postulacionService.postularse(trabajador, trabajo);
+
+        ArgumentCaptor<Postulacion> captor = ArgumentCaptor.forClass(Postulacion.class);
+        verify(postulacionRepo).save(captor.capture());
+        assertEquals(trabajador, captor.getValue().getTrabajador());
+        assertEquals(trabajo, captor.getValue().getTrabajo());
+        assertEquals(EstadoPostulacion.PENDIENTE, captor.getValue().getEstado());
     }
 
-    /**
-     * Test of findByTrabajador method, of class PostulacionService.
-     */
+    @Test
+    public void testPostularseNoDuplica() {
+        Usuario trabajador = new Usuario();
+        Trabajo trabajo = new Trabajo();
+        when(postulacionRepo.existsByTrabajadorAndTrabajo(trabajador, trabajo)).thenReturn(true);
+
+        postulacionService.postularse(trabajador, trabajo);
+
+        verify(postulacionRepo, never()).save(any());
+    }
+
     @Test
     public void testFindByTrabajador() {
-        System.out.println("findByTrabajador");
-        Usuario trabajador = null;
-        PostulacionService instance = new PostulacionService();
-        List<Postulacion> expResult = null;
-        List<Postulacion> result = instance.findByTrabajador(trabajador);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Usuario trabajador = new Usuario();
+        when(postulacionRepo.findByTrabajador(trabajador)).thenReturn(List.of(new Postulacion()));
+
+        assertEquals(1, postulacionService.findByTrabajador(trabajador).size());
+        verify(postulacionRepo).findByTrabajador(trabajador);
     }
 
-    /**
-     * Test of aceptarPostulacion method, of class PostulacionService.
-     */
     @Test
     public void testAceptarPostulacion() {
-        System.out.println("aceptarPostulacion");
-        Long id = null;
-        PostulacionService instance = new PostulacionService();
-        Postulacion expResult = null;
-        Postulacion result = instance.aceptarPostulacion(id);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        Postulacion postulacion = new Postulacion();
+        postulacion.setEstado(EstadoPostulacion.PENDIENTE);
+        Trabajo trabajo = new Trabajo();
+        trabajo.setEstado(EstadoTrabajo.ACTIVO);
+        postulacion.setTrabajo(trabajo);
+        when(postulacionRepo.findById(1L)).thenReturn(Optional.of(postulacion));
+        when(postulacionRepo.save(postulacion)).thenReturn(postulacion);
+
+        Postulacion aceptada = postulacionService.aceptarPostulacion(1L);
+
+        assertEquals(EstadoPostulacion.ACEPTADO, aceptada.getEstado());
+        verify(trabajoRepo).save(trabajo);
     }
-    
+
+    @Test
+    public void testAceptarPostulacionRechazaReprocesar() {
+        Postulacion postulacion = new Postulacion();
+        postulacion.setEstado(EstadoPostulacion.ACEPTADO);
+        when(postulacionRepo.findById(1L)).thenReturn(Optional.of(postulacion));
+
+        assertThrows(RuntimeException.class, () -> postulacionService.aceptarPostulacion(1L));
+        verify(trabajoRepo, never()).save(any());
+    }
+
+    @Test
+    public void testAceptarPostulacionInexistente() {
+        when(postulacionRepo.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> postulacionService.aceptarPostulacion(99L));
+    }
 }
