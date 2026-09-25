@@ -134,6 +134,10 @@ public class TrabajoController {
             @RequestParam Integer puntuacion,
             HttpSession session) {
 
+        if (puntuacion == null || puntuacion < 1 || puntuacion > 5) {
+            return "redirect:/trabajo/calificar?id=" + trabajoId;
+        }
+
         System.out.println("=== INICIO DE calificarTrabajo ===");
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");

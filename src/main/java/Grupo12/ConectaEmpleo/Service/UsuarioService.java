@@ -3,6 +3,7 @@ package Grupo12.ConectaEmpleo.Service;
 import Grupo12.ConectaEmpleo.Model.Usuario;
 import Grupo12.ConectaEmpleo.Repository.UsuarioRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +61,19 @@ public class UsuarioService {
      * @param nuevaPuntuacion Nueva puntuación (1-5)
      */
     public void actualizarCalificacionPromedio(Usuario usuario, Integer nuevaPuntuacion) {
-        usuario.setCalificacionPromedio(new BigDecimal(nuevaPuntuacion));
+        int conteoPrevio = usuario.getCalificacionesCount() != null ? usuario.getCalificacionesCount() : 0;
+        BigDecimal promedioPrevio = usuario.getCalificacionPromedio();
+
+        if (promedioPrevio == null) {
+            usuario.setCalificacionPromedio(BigDecimal.valueOf(nuevaPuntuacion));
+        } else {
+            BigDecimal suma = promedioPrevio.multiply(BigDecimal.valueOf(conteoPrevio))
+                    .add(BigDecimal.valueOf(nuevaPuntuacion));
+            usuario.setCalificacionPromedio(
+                    suma.divide(BigDecimal.valueOf(conteoPrevio + 1), 2, RoundingMode.HALF_UP));
+        }
+
+        usuario.setCalificacionesCount(conteoPrevio + 1);
         usuarioRepo.save(usuario);
     }
 }

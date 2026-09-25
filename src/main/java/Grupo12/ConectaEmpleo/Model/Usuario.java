@@ -23,6 +23,7 @@ public class Usuario {
     private String ubicacion;
     private String experiencia;
     private BigDecimal calificacionPromedio;
+    private Integer calificacionesCount;
 
     @Enumerated(EnumType.STRING)
     private RolUsuario rol;
@@ -92,6 +93,14 @@ public class Usuario {
 
     public void setCalificacionPromedio(BigDecimal calificacionPromedio) {
         this.calificacionPromedio = calificacionPromedio;
+    }
+
+    public Integer getCalificacionesCount() {
+        return calificacionesCount;
+    }
+
+    public void setCalificacionesCount(Integer calificacionesCount) {
+        this.calificacionesCount = calificacionesCount;
     }
 
     public RolUsuario getRol() {
